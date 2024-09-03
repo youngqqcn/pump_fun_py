@@ -14,7 +14,7 @@ def get_virtual_reserves(bonding_curve: Pubkey):
         "tokenTotalSupply" / Int64ul,
         "complete" / Flag
     )
-    
+
     try:
         account_info = client.get_account_info(bonding_curve)
         data = account_info.value.data
@@ -49,7 +49,7 @@ def get_coin_data(mint_str: str):
         virtual_sol_reserves = int(virtual_reserves.virtualSolReserves)
         token_total_supply = int(virtual_reserves.tokenTotalSupply)
         complete = bool(virtual_reserves.complete)
-        
+
         return {
             "mint": mint_str,
             "bonding_curve": str(bonding_curve),
