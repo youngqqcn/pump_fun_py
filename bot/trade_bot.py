@@ -69,7 +69,7 @@ class TradeBot:
                         Pubkey.from_string(self.pool_pda)
                     )
                     # 池子中的sol越多，买入概率越小, 卖出概率越大
-                    buy_probablity = (bonding_data.x / 85) * 100
+                    buy_probablity = (bonding_data.x / 80) * 100
 
                 is_buy = random.randint(0, 100) > buy_probablity
 
