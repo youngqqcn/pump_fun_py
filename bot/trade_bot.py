@@ -32,7 +32,6 @@ from construct import Int8ub, Padding, Struct, Int64ul, Flag
 from binascii import hexlify
 
 
-
 class BondingData:
     y = 0  # 虚拟池子中token的数量
     x = 0  # 虚拟池子中SOL的数量
@@ -55,38 +54,56 @@ class TradeBot:
         self.client = rpc_client
         self.payer_keypair = keypair
         self.mint_addr = mint_addr
+        self.pool_pda = ""
         pass
 
     def start(self, loop_secs=30):
         try:
             print("=====地址:{}".format(self.payer_keypair.pubkey()))
 
+            buy_probablity = 50
             while True:
 
-                sol_balance = self.client.get_balance(self.payer_keypair.pubkey()).value
-                if sol_balance < 1 *10**9:
-                    print("领取空投: {}".format(self.payer_keypair.pubkey()))
-                    tmpCli = Client("https://api.devnet.solana.com")
-                    r = tmpCli.request_airdrop(self.payer_keypair.pubkey(), lamports=10**9)
-                    print("领取成功:{}".format(r.value))
+                if self.pool_pda != "":
+                    bonding_data = self.get_bonding_data(
+                        Pubkey.from_string(self.pool_pda)
+                    )
+                    # 池子中的sol越多，买入概率越小, 卖出概率越大
+                    buy_probablity = (bonding_data.x / 85) * 100
 
-                time.sleep(random.randint(10, 30)/10)
+                n = random.randint(0, 100)
+                is_buy = n > buy_probablity
 
-                sol_amount = random.randint(1 * 10**8, 3 * 10**8) / 10**9
-                self.buy(mint_str=self.mint_addr, sol_amount=sol_amount, slippage=10)
+                token_balance = self.get_token_balance(mint_str=self.mint_addr)
+                if token_balance < 10000000:
+                    is_buy = True
 
+                try:
+                    sol_balance = self.client.get_balance(
+                        self.payer_keypair.pubkey()
+                    ).value
+                except Exception:
+                    is_buy = False
+                    pass
 
-                sell_flag = False
-                if sol_balance / 10**9 < 1:
-                    # 如果余额不够，马上卖
-                    sell_flag = True
+                if is_buy:
+                    if sol_balance < 1 * 10**9:
+                        print("领取空投: {}".format(self.payer_keypair.pubkey()))
+                        tmpCli = Client("https://api.devnet.solana.com")
+                        r = tmpCli.request_airdrop(
+                            self.payer_keypair.pubkey(), lamports=10**9
+                        )
+                        print("领取成功:{}".format(r.value))
 
-                if sell_flag or random.randint(0, 100) < 70:
-                    token_balance = self.get_token_balance(mint_str=self.mint_addr)
+                    time.sleep(random.randint(10, 30) / 10)
 
+                    sol_amount = random.randint(1 * 10**8, 3 * 10**8) / 10**9
+                    self.buy(
+                        mint_str=self.mint_addr, sol_amount=sol_amount, slippage=10
+                    )
+                else:
                     # 卖出的百分比
-                    sell_amount = token_balance * random.randint(3, 30) / 100
-
+                    sell_amount = token_balance * random.randint(3, 20) / 100
                     self.sell(
                         mint_str=self.mint_addr,
                         token_amount=sell_amount,
@@ -141,6 +158,7 @@ class TradeBot:
 
             POOL_PDA = Pubkey.from_string(coin_data["pool_pda"])
             CURVE_CONFIG_PDA = Pubkey.from_string(coin_data["curve_config_pda"])
+            self.pool_pda = POOL_PDA
 
             bonding_data = self.get_bonding_data(POOL_PDA)
             print(bonding_data)
@@ -393,7 +411,7 @@ class TradeBot:
             return float(ui_amount)
         except Exception as e:
             print_exc(e)
-            return None
+            return 0
 
     def get_bonding_data(self, bonding_curve_pda: Pubkey) -> BondingData:
         bonding_curve_struct = Struct(
