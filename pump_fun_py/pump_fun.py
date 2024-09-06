@@ -130,13 +130,13 @@ def sell(mint_str: str, token_balance: Optional[Union[int, float]] = None,  slip
         # Get token account
         token_account = get_associated_token_address(owner, mint)
 
-        # Calculate token price
-        sol_decimal = 10**9
+        # # Calculate token price
+        # sol_decimal = 10**9
         token_decimal = 10**6
-        virtual_sol_reserves = coin_data['virtual_sol_reserves'] / sol_decimal
-        virtual_token_reserves = coin_data['virtual_token_reserves'] / token_decimal
-        token_price = virtual_sol_reserves / virtual_token_reserves
-        print(f"Token Price: {token_price:.20f} SOL")
+        # virtual_sol_reserves = coin_data['virtual_sol_reserves'] / sol_decimal
+        # virtual_token_reserves = coin_data['virtual_token_reserves'] / token_decimal
+        # token_price = virtual_sol_reserves / virtual_token_reserves
+        # print(f"Token Price: {token_price:.20f} SOL")
 
         # Get token balance
         if token_balance == None:
@@ -149,11 +149,11 @@ def sell(mint_str: str, token_balance: Optional[Union[int, float]] = None,  slip
         amount = int(token_balance * token_decimal)
 
         # Calculate minimum SOL output
-        sol_out = float(token_balance) * float(token_price)
-        slippage_adjustment = 1 - (slippage / 100)
-        sol_out_with_slippage = sol_out * slippage_adjustment
-        min_sol_output = int(sol_out_with_slippage * LAMPORTS_PER_SOL)
-        print("Min Sol Output:", sol_out_with_slippage)
+        # sol_out = float(token_balance) * float(token_price)
+        # slippage_adjustment = 1 - (slippage / 100)
+        # sol_out_with_slippage = sol_out * slippage_adjustment
+        # min_sol_output = int(sol_out_with_slippage * LAMPORTS_PER_SOL)
+        # print("Min Sol Output:", sol_out_with_slippage)
 
         # Define account keys required for the swap
         MINT = Pubkey.from_string(coin_data['mint'])
@@ -161,28 +161,59 @@ def sell(mint_str: str, token_balance: Optional[Union[int, float]] = None,  slip
         ASSOCIATED_BONDING_CURVE = Pubkey.from_string(coin_data['associated_bonding_curve'])
         ASSOCIATED_USER = token_account
         USER = owner
+        POOL_PDA = Pubkey.from_string(coin_data["pool_pda"])
+        CURVE_CONFIG_PDA = Pubkey.from_string(coin_data["curve_config_pda"])
+
+        pool_pda_, bump = Pubkey.find_program_address(
+            ["liquidity_sol_vault".encode(), bytes(mint)],
+            FANSLNAD_PROGRAM
+        )
+        assert pool_pda_ == BONDING_CURVE, "invalid bonding curve pda"
 
         # Build account key list
         keys = [
-            AccountMeta(pubkey=GLOBAL, is_signer=False, is_writable=False),
-            AccountMeta(pubkey=FEE_RECIPIENT, is_signer=False, is_writable=True), # Writable
-            AccountMeta(pubkey=MINT, is_signer=False, is_writable=False),
-            AccountMeta(pubkey=BONDING_CURVE, is_signer=False, is_writable=True), # Writable
-            AccountMeta(pubkey=ASSOCIATED_BONDING_CURVE, is_signer=False, is_writable=True), # Writable
-            AccountMeta(pubkey=ASSOCIATED_USER, is_signer=False, is_writable=True), # Writable
-            AccountMeta(pubkey=USER, is_signer=True, is_writable=True), # Writable Signer Fee Payer
+          # curve config,  即 dexConfigurationAccount
+            # TODO
+            AccountMeta(pubkey=CURVE_CONFIG_PDA, is_signer=False, is_writable=True),
+
+            # pool PDA,  即 pool
+            AccountMeta(pubkey=POOL_PDA, is_signer=False, is_writable=True),
+
+            # token mint,  即 tokenMint
+            AccountMeta(pubkey=MINT, is_signer=False, is_writable=True),
+
+            # bonding curve  ata,  即 poolTokenAccount
+            AccountMeta(pubkey=ASSOCIATED_BONDING_CURVE, is_signer=False, is_writable=True),
+
+            # bondign curve PDA, 即 poolSolVault
+            AccountMeta(pubkey=BONDING_CURVE, is_signer=False, is_writable=True),
+
+            # 用户 token ata,  userTokenAccount
+            AccountMeta(pubkey=ASSOCIATED_USER, is_signer=False, is_writable=True),
+
+            # 手续费接收
+            AccountMeta(pubkey=FEE_RECIPIENT, is_signer=False, is_writable=True),
+
+            # 用户
+            AccountMeta(pubkey=USER, is_signer=True, is_writable=True),
+
+            # 系统
+            AccountMeta(pubkey=RENT, is_signer=False, is_writable=False),
             AccountMeta(pubkey=SYSTEM_PROGRAM, is_signer=False, is_writable=False),
-            AccountMeta(pubkey=ASSOC_TOKEN_ACC_PROG, is_signer=False, is_writable=False),
             AccountMeta(pubkey=TOKEN_PROGRAM, is_signer=False, is_writable=False),
-            # AccountMeta(pubkey=EVENT_AUTHORITY, is_signer=False, is_writable=False),
-            AccountMeta(pubkey=FANSLNAD_PROGRAM, is_signer=False, is_writable=False)
+            AccountMeta(pubkey=ASSOC_TOKEN_ACC_PROG, is_signer=False, is_writable=False),
+
+            #==============
+            AccountMeta(pubkey=FANSLNAD_PROGRAM, is_signer=False, is_writable=True),
         ]
 
         # Construct swap instruction
+        # https://docs.python.org/3/library/struct.html
         data = bytearray()
         data.extend(bytes.fromhex("33e685a4017f83ad"))
         data.extend(struct.pack('<Q', amount))
-        data.extend(struct.pack('<Q', min_sol_output))
+        data.extend(struct.pack('<B', bump))
+        data.extend(struct.pack('<Q', 100)) #TODO
         data = bytes(data)
         swap_instruction = Instruction(FANSLNAD_PROGRAM, data, keys)
 
