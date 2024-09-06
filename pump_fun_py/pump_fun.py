@@ -40,6 +40,8 @@ def buy(mint_str: str, token_amount: float = 0.01, slippage: int = 25) -> bool:
             token_account = get_associated_token_address(owner, mint)
             token_account_instructions = create_associated_token_account(owner, owner, mint)
 
+        # token 数量
+        token_amount = int(token_amount * 10**6)
 
         # Define account keys required for the swap
         MINT = Pubkey.from_string(coin_data['mint'])

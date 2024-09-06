@@ -48,9 +48,23 @@ def derive_pool_accounts(mint_str: str):
     except Exception:
         return None, None
 
-def derive_curve_config_pda():
+def derive_curve_config_pda() -> Pubkey:
     seed = "CurveConfiguration"
-    pass
+    curve_config_pda, _ = Pubkey.find_program_address(
+        [seed.encode()],
+        FANSLNAD_PROGRAM
+    )
+    return curve_config_pda
+
+def derive_pool_pda(mint_str: str) -> Pubkey:
+    seed = "liquidity_pool"
+    mint = Pubkey.from_string(mint_str)
+    pool_pda, _  = Pubkey.find_program_address(
+        [seed.encode(), bytes(mint)],
+        FANSLNAD_PROGRAM
+    )
+    return pool_pda
+
 
 
 
@@ -59,10 +73,10 @@ def get_coin_data(mint_str: str):
     if bonding_curve is None or associated_bonding_curve is None:
         return None
 
-    curve_config_pda = "6ASYfsmfsqkHudWo1MahkuhHPJrC5eSV36tLrgGeD18b"
+    curve_config_pda = derive_curve_config_pda()  #"6ASYfsmfsqkHudWo1MahkuhHPJrC5eSV36tLrgGeD18b"
 
     #SOMEONE
-    pool_pda = "4ztHC14oxFUcRDYNWk459DujmQiSugvJNumDkcR2QEZ3"
+    pool_pda = derive_pool_pda(mint_str) #"4ztHC14oxFUcRDYNWk459DujmQiSugvJNumDkcR2QEZ3"
 
     # virtual_reserves = get_virtual_reserves(bonding_curve)
     # if virtual_reserves is None:
@@ -78,8 +92,8 @@ def get_coin_data(mint_str: str):
             "mint": mint_str,
             "bonding_curve": str(bonding_curve),
             "associated_bonding_curve": str(associated_bonding_curve),
-            "pool_pda": pool_pda,
-            "curve_config_pda": curve_config_pda,
+            "pool_pda": str(pool_pda),
+            "curve_config_pda": str(curve_config_pda),
             # "virtual_token_reserves": virtual_token_reserves,
             # "virtual_sol_reserves": virtual_sol_reserves,
             # "token_total_supply": token_total_supply,
