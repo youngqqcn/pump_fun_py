@@ -61,7 +61,7 @@ class TradeBot:
         try:
             print("=====地址:{}".format(self.payer_keypair.pubkey()))
 
-            sell_probablity = 50
+            buy_probablity = 50
             while True:
 
                 if self.pool_pda != "":
@@ -69,10 +69,9 @@ class TradeBot:
                         Pubkey.from_string(self.pool_pda)
                     )
                     # 池子中的sol越多，买入概率越小, 卖出概率越大
-                    sell_probablity = (bonding_data.x / 85) * 100
+                    buy_probablity = (bonding_data.x / 85) * 100
 
-                n = random.randint(0, 100)
-                is_buy = n < sell_probablity
+                is_buy = random.randint(0, 100) > buy_probablity
 
                 token_balance = self.get_token_balance(mint_str=self.mint_addr)
                 if token_balance < 10000000:
