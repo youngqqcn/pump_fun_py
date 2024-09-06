@@ -45,11 +45,11 @@ def main():
                 # 如果余额不够，马上卖
                 sell_flag = True
 
-            if sell_flag or random.randint(0, 100) < 30:
+            if sell_flag or random.randint(0, 100) < 50:
                 token_balance = tradebot.get_token_balance(mint_str=mint_addr)
 
                 # 卖出的百分比
-                sell_amount = token_balance * random.randint(10, 30) / 100
+                sell_amount = token_balance * random.randint(3, 15) / 100
 
                 tradebot.sell(
                     mint_str=mint_addr,
