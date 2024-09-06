@@ -16,10 +16,10 @@ from solders.instruction import Instruction  # type: ignore
 from solders.compute_budget import set_compute_unit_limit, set_compute_unit_price  # type: ignore
 
 # from config import payer_keypair, client
-from constants import *
+from bot.constants import *
 from solana.rpc.types import TokenAccountOpts
-from calc import calc_buy_for_dy
-from utils import find_data
+from bot.calc import calc_buy_for_dy
+from bot.utils import find_data
 from solana.rpc.types import TxOpts
 from typing import Optional, Union
 from traceback import print_exc
@@ -31,8 +31,6 @@ from spl.token.instructions import get_associated_token_address
 from construct import Int8ub, Padding, Struct, Int64ul, Flag
 from binascii import hexlify
 
-# from config import client
-from constants import FANSLNAD_PROGRAM
 
 
 class BondingData:

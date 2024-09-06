@@ -8,10 +8,10 @@ from traceback import print_exc
 from solana.rpc.api import Client
 from dotenv import load_dotenv
 import os
-from pump_fun import TradeBot
+from bot.trade_bot import TradeBot
 import multiprocessing
 
-load_dotenv()
+load_dotenv(".env")
 
 
 def run_start(worker_instance: TradeBot):
