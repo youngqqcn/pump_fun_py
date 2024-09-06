@@ -157,7 +157,7 @@ class TradeBot:
 
             POOL_PDA = Pubkey.from_string(coin_data["pool_pda"])
             CURVE_CONFIG_PDA = Pubkey.from_string(coin_data["curve_config_pda"])
-            self.pool_pda = POOL_PDA
+            self.pool_pda = coin_data["pool_pda"]
 
             bonding_data = self.get_bonding_data(POOL_PDA)
             print(bonding_data)
@@ -287,6 +287,8 @@ class TradeBot:
             USER = owner
             POOL_PDA = Pubkey.from_string(coin_data["pool_pda"])
             CURVE_CONFIG_PDA = Pubkey.from_string(coin_data["curve_config_pda"])
+
+            self.pool_pda = coin_data["pool_pda"]
 
             pool_pda_, bump = Pubkey.find_program_address(
                 ["liquidity_sol_vault".encode(), bytes(mint)], FANSLNAD_PROGRAM
