@@ -1,24 +1,38 @@
 import json
 from time import sleep
-from pump_fun import buy, sell
 import random
+from solders.keypair import Keypair  # type: ignore
 
-from config import RPC, client, payer_keypair
-from utils import get_token_balance
+# from config import RPC, client, payer_keypair
 from traceback import print_exc
 
-# from solana.rpc.api import Client,
+from solana.rpc.api import Client
+from dotenv import load_dotenv
+import os
+
+from pump_fun import TradeBot
+
+load_dotenv()
 
 
 def main():
+    PRIV_KEY = os.getenv("PRIV_KEY")
+    RPC = os.getenv("RPC")
+    client = Client(RPC)
+    payer_keypair = Keypair.from_base58_string(PRIV_KEY)
 
     mint_addr = "BBwV9WtsobWJStdY8o2ftxRkpyyNXG41SgSGErRXQWS4"
+
+    temp = Keypair.from_seed(b"sldfksdfjskdfjsdfiwer23242342432")
+    print(temp)
+    print(temp.pubkey())
+    tradebot = TradeBot(rpc_client=client, keypair=payer_keypair)
 
     try:
         while True:
 
             sol_amount = random.randint(1 * 10**8, 3 * 10**8) / 10**9
-            buy(mint_str=mint_addr, sol_amount=sol_amount, slippage=10)
+            tradebot.buy(mint_str=mint_addr, sol_amount=sol_amount, slippage=10)
             # print("ret= {}".format(ret))
 
             sol_balance = client.get_balance(payer_keypair.pubkey()).value
@@ -34,7 +48,7 @@ def main():
                 # 卖出的百分比
                 sell_amount = token_balance * random.randint(10, 30) / 100
 
-                sell(
+                tradebot.sell(
                     mint_str=mint_addr,
                     token_amount=sell_amount,
                     slippage=10,
