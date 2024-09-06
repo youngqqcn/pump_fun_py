@@ -35,7 +35,7 @@ def get_token_balance(mint_str: str):
                 {"encoding": "jsonParsed"},
             ],
         }
-        
+
         response = requests.post(RPC, json=payload, headers=headers)
         ui_amount = find_data(response.json(), "uiAmount")
         return float(ui_amount)
@@ -55,7 +55,7 @@ def confirm_txn(txn_sig, max_retries=20, retry_interval=3):
                 return True
             print("Error: Transaction not confirmed. Retrying...")
             if txn_json['err']:
-                print("Transaction failed.")
+                print("Transaction failed: {}".format(json.dumps( txn_json, indent=4)))
                 return False
         except Exception as e:
             print("Awaiting confirmation... try count:", retries+1)

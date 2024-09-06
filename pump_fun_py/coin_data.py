@@ -2,7 +2,7 @@ from solders.pubkey import Pubkey  # type: ignore
 from spl.token.instructions import get_associated_token_address
 from construct import Padding, Struct, Int64ul, Flag
 from config import client
-from constants import PUMP_FUN_PROGRAM
+from constants import FANSLNAD_PROGRAM
 
 def get_virtual_reserves(bonding_curve: Pubkey):
     bonding_curve_struct = Struct(
@@ -23,41 +23,67 @@ def get_virtual_reserves(bonding_curve: Pubkey):
     except Exception:
         return None
 
-def derive_bonding_curve_accounts(mint_str: str):
+# def derive_bonding_curve_accounts(mint_str: str):
+#     try:
+#         mint = Pubkey.from_string(mint_str)
+#         bonding_curve, _ = Pubkey.find_program_address(
+#             ["bonding-curve".encode(), bytes(mint)],
+#             FANSLNAD_PROGRAM
+#         )
+#         associated_bonding_curve = get_associated_token_address(bonding_curve, mint)
+#         return bonding_curve, associated_bonding_curve
+#     except Exception:
+#         return None, None
+
+
+def derive_pool_accounts(mint_str: str):
     try:
         mint = Pubkey.from_string(mint_str)
         bonding_curve, _ = Pubkey.find_program_address(
-            ["bonding-curve".encode(), bytes(mint)],
-            PUMP_FUN_PROGRAM
+            ["liquidity_sol_vault".encode(), bytes(mint)],
+            FANSLNAD_PROGRAM
         )
         associated_bonding_curve = get_associated_token_address(bonding_curve, mint)
         return bonding_curve, associated_bonding_curve
     except Exception:
         return None, None
 
+def derive_curve_config_pda():
+    seed = "CurveConfiguration"
+    pass
+
+
+
 def get_coin_data(mint_str: str):
-    bonding_curve, associated_bonding_curve = derive_bonding_curve_accounts(mint_str)
+    bonding_curve, associated_bonding_curve = derive_pool_accounts(mint_str)
     if bonding_curve is None or associated_bonding_curve is None:
         return None
 
-    virtual_reserves = get_virtual_reserves(bonding_curve)
-    if virtual_reserves is None:
-        return None
+    curve_config_pda = "6ASYfsmfsqkHudWo1MahkuhHPJrC5eSV36tLrgGeD18b"
+
+    #SOMEONE
+    pool_pda = "4ztHC14oxFUcRDYNWk459DujmQiSugvJNumDkcR2QEZ3"
+
+    # virtual_reserves = get_virtual_reserves(bonding_curve)
+    # if virtual_reserves is None:
+    #     return None
 
     try:
-        virtual_token_reserves = int(virtual_reserves.virtualTokenReserves)
-        virtual_sol_reserves = int(virtual_reserves.virtualSolReserves)
-        token_total_supply = int(virtual_reserves.tokenTotalSupply)
-        complete = bool(virtual_reserves.complete)
+        # virtual_token_reserves = int(virtual_reserves.virtualTokenReserves)
+        # virtual_sol_reserves = int(virtual_reserves.virtualSolReserves)
+        # token_total_supply = int(virtual_reserves.tokenTotalSupply)
+        # complete = bool(virtual_reserves.complete)
 
         return {
             "mint": mint_str,
             "bonding_curve": str(bonding_curve),
             "associated_bonding_curve": str(associated_bonding_curve),
-            "virtual_token_reserves": virtual_token_reserves,
-            "virtual_sol_reserves": virtual_sol_reserves,
-            "token_total_supply": token_total_supply,
-            "complete": complete
+            "pool_pda": pool_pda,
+            "curve_config_pda": curve_config_pda,
+            # "virtual_token_reserves": virtual_token_reserves,
+            # "virtual_sol_reserves": virtual_sol_reserves,
+            # "token_total_supply": token_total_supply,
+            # "complete": complete
         }
     except Exception:
         return None

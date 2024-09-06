@@ -1,3 +1,4 @@
+from pprint import pprint
 import struct
 from solana.transaction import AccountMeta, Transaction
 from spl.token.instructions import create_associated_token_account, get_associated_token_address, close_account, CloseAccountParams
@@ -12,11 +13,14 @@ from solana.rpc.types import TxOpts
 from coin_data import get_coin_data
 from typing import Optional, Union
 
-def buy(mint_str: str, sol_in: float = 0.01, slippage: int = 25) -> bool:
+# def buy(mint_str: str, sol_in: float = 0.01, slippage: int = 25) -> bool:
+
+
+def buy(mint_str: str, token_amount: float = 0.01, slippage: int = 25) -> bool:
     try:
         # Get coin data
         coin_data = get_coin_data(mint_str)
-        print(coin_data)
+        pprint(coin_data)
 
         if not coin_data:
             print("Failed to retrieve coin data...")
@@ -36,17 +40,6 @@ def buy(mint_str: str, sol_in: float = 0.01, slippage: int = 25) -> bool:
             token_account = get_associated_token_address(owner, mint)
             token_account_instructions = create_associated_token_account(owner, owner, mint)
 
-        # Calculate amount
-        virtual_sol_reserves = coin_data['virtual_sol_reserves']
-        virtual_token_reserves = coin_data['virtual_token_reserves']
-        sol_in_lamports = sol_in * LAMPORTS_PER_SOL
-        amount = int(sol_in_lamports * virtual_token_reserves / virtual_sol_reserves)
-
-        # Calculate max_sol_cost
-        slippage_adjustment = 1 + (slippage / 100)
-        sol_in_with_slippage = sol_in * slippage_adjustment
-        max_sol_cost = int(sol_in_with_slippage * LAMPORTS_PER_SOL)
-        print("Max Sol Cost:", sol_in_with_slippage)
 
         # Define account keys required for the swap
         MINT = Pubkey.from_string(coin_data['mint'])
@@ -55,29 +48,53 @@ def buy(mint_str: str, sol_in: float = 0.01, slippage: int = 25) -> bool:
         ASSOCIATED_USER = token_account
         USER = owner
 
+        POOL_PDA = Pubkey.from_string(coin_data["pool_pda"])
+        CURVE_CONFIG_PDA = Pubkey.from_string(coin_data["curve_config_pda"])
+
         # Build account key list
         keys = [
-            AccountMeta(pubkey=GLOBAL, is_signer=False, is_writable=False),
-            AccountMeta(pubkey=FEE_RECIPIENT, is_signer=False, is_writable=True),
-            AccountMeta(pubkey=MINT, is_signer=False, is_writable=False),
-            AccountMeta(pubkey=BONDING_CURVE, is_signer=False, is_writable=True),
+            # curve config,  即 dexConfigurationAccount
+            # TODO
+            AccountMeta(pubkey=CURVE_CONFIG_PDA, is_signer=False, is_writable=True),
+
+            # pool PDA,  即 pool
+            AccountMeta(pubkey=POOL_PDA, is_signer=False, is_writable=True),
+
+            # token mint,  即 tokenMint
+            AccountMeta(pubkey=MINT, is_signer=False, is_writable=True),
+
+            # bonding curve  ata,  即 poolTokenAccount
             AccountMeta(pubkey=ASSOCIATED_BONDING_CURVE, is_signer=False, is_writable=True),
+
+            # bondign curve PDA, 即 poolSolVault
+            AccountMeta(pubkey=BONDING_CURVE, is_signer=False, is_writable=True),
+
+            # 用户 token ata,  userTokenAccount
             AccountMeta(pubkey=ASSOCIATED_USER, is_signer=False, is_writable=True),
+
+            # 手续费接收
+            AccountMeta(pubkey=FEE_RECIPIENT, is_signer=False, is_writable=True),
+
+            # 用户
             AccountMeta(pubkey=USER, is_signer=True, is_writable=True),
+
+            # 系统
+            AccountMeta(pubkey=RENT, is_signer=False, is_writable=False),
             AccountMeta(pubkey=SYSTEM_PROGRAM, is_signer=False, is_writable=False),
             AccountMeta(pubkey=TOKEN_PROGRAM, is_signer=False, is_writable=False),
-            AccountMeta(pubkey=RENT, is_signer=False, is_writable=False),
-            AccountMeta(pubkey=EVENT_AUTHORITY, is_signer=False, is_writable=False),
-            AccountMeta(pubkey=PUMP_FUN_PROGRAM, is_signer=False, is_writable=False)
+            AccountMeta(pubkey=ASSOC_TOKEN_ACC_PROG, is_signer=False, is_writable=False),
+
+            #==============
+            AccountMeta(pubkey=FANSLNAD_PROGRAM, is_signer=False, is_writable=True),
         ]
 
         # Construct the swap instruction
         data = bytearray()
         data.extend(bytes.fromhex("66063d1201daebea"))
-        data.extend(struct.pack('<Q', amount))
-        data.extend(struct.pack('<Q', max_sol_cost))
+        data.extend(struct.pack('<Q', int(token_amount)))
+        data.extend(struct.pack('<Q', 10**9))
         data = bytes(data)
-        swap_instruction = Instruction(PUMP_FUN_PROGRAM, data, keys)
+        swap_instruction = Instruction(FANSLNAD_PROGRAM, data, keys)
 
         # Construct and sign transaction
         recent_blockhash = client.get_latest_blockhash().value.blockhash
@@ -157,8 +174,8 @@ def sell(mint_str: str, token_balance: Optional[Union[int, float]] = None,  slip
             AccountMeta(pubkey=SYSTEM_PROGRAM, is_signer=False, is_writable=False),
             AccountMeta(pubkey=ASSOC_TOKEN_ACC_PROG, is_signer=False, is_writable=False),
             AccountMeta(pubkey=TOKEN_PROGRAM, is_signer=False, is_writable=False),
-            AccountMeta(pubkey=EVENT_AUTHORITY, is_signer=False, is_writable=False),
-            AccountMeta(pubkey=PUMP_FUN_PROGRAM, is_signer=False, is_writable=False)
+            # AccountMeta(pubkey=EVENT_AUTHORITY, is_signer=False, is_writable=False),
+            AccountMeta(pubkey=FANSLNAD_PROGRAM, is_signer=False, is_writable=False)
         ]
 
         # Construct swap instruction
@@ -167,7 +184,7 @@ def sell(mint_str: str, token_balance: Optional[Union[int, float]] = None,  slip
         data.extend(struct.pack('<Q', amount))
         data.extend(struct.pack('<Q', min_sol_output))
         data = bytes(data)
-        swap_instruction = Instruction(PUMP_FUN_PROGRAM, data, keys)
+        swap_instruction = Instruction(FANSLNAD_PROGRAM, data, keys)
 
         # Construct and sign transaction
         recent_blockhash = client.get_latest_blockhash().value.blockhash
@@ -189,23 +206,23 @@ def sell(mint_str: str, token_balance: Optional[Union[int, float]] = None,  slip
     except Exception as e:
         print(e)
 
-def get_token_price(mint_str: str) -> float:
-    try:
-        # Get coin data
-        coin_data = get_coin_data(mint_str)
+# def get_token_price(mint_str: str) -> float:
+#     try:
+#         # Get coin data
+#         coin_data = get_coin_data(mint_str)
 
-        if not coin_data:
-            print("Failed to retrieve coin data...")
-            return None
+#         if not coin_data:
+#             print("Failed to retrieve coin data...")
+#             return None
 
-        virtual_sol_reserves = coin_data['virtual_sol_reserves'] / 10**9
-        virtual_token_reserves = coin_data['virtual_token_reserves'] / 10**6
+#         virtual_sol_reserves = coin_data['virtual_sol_reserves'] / 10**9
+#         virtual_token_reserves = coin_data['virtual_token_reserves'] / 10**6
 
-        token_price = virtual_sol_reserves / virtual_token_reserves
-        print(f"Token Price: {token_price:.20f} SOL")
+#         token_price = virtual_sol_reserves / virtual_token_reserves
+#         print(f"Token Price: {token_price:.20f} SOL")
 
-        return token_price
+#         return token_price
 
-    except Exception as e:
-        print(f"Error calculating token price: {e}")
-        return None
+#     except Exception as e:
+#         print(f"Error calculating token price: {e}")
+#         return None
