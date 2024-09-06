@@ -1,5 +1,6 @@
 import json
 from pprint import pprint
+import random
 import struct
 import time
 import requests
@@ -52,9 +53,48 @@ class BondingData:
 
 
 class TradeBot:
-    def __init__(self, rpc_client: Client, keypair: Keypair) -> None:
+    def __init__(self, rpc_client: Client, keypair: Keypair, mint_addr: str) -> None:
         self.client = rpc_client
         self.payer_keypair = keypair
+        self.mint_addr = mint_addr
+        pass
+
+    def start(self, loop_secs=30):
+        try:
+            print("=====地址:{}".format(self.payer_keypair.pubkey()))
+
+            while True:
+                time.sleep(random.randint(10, 30)/10)
+
+                sol_amount = random.randint(1 * 10**8, 3 * 10**8) / 10**9
+                self.buy(mint_str=self.mint_addr, sol_amount=sol_amount, slippage=10)
+
+                sol_balance = self.client.get_balance(self.payer_keypair.pubkey()).value
+
+                sell_flag = False
+                if sol_balance / 10**9 < 10:
+                    # 如果余额不够，马上卖
+                    sell_flag = True
+
+                if sell_flag or random.randint(0, 100) < 50:
+                    token_balance = self.get_token_balance(mint_str=self.mint_addr)
+
+                    # 卖出的百分比
+                    sell_amount = token_balance * random.randint(3, 15) / 100
+
+                    self.sell(
+                        mint_str=self.mint_addr,
+                        token_amount=sell_amount,
+                        slippage=10,
+                        close_token_account=False,
+                    )
+
+                time.sleep(loop_secs)
+            pass
+        except Exception as e:
+            print(e)
+            print_exc(e)
+
         pass
 
     def buy(self, mint_str: str, sol_amount: float = 0.01, slippage: int = 25) -> bool:
