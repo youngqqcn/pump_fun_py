@@ -7,22 +7,20 @@ from constants import FANSLNAD_PROGRAM
 
 
 class BondingData:
-    total_supply = 0
-    reserve_token = 0
-    reserve_sol = 0
-    complete = False
+    y = 0  # 虚拟池子中token的数量
+    x = 0  # 虚拟池子中SOL的数量
+    is_complete = False
 
     def __init__(
-        self, total_supply: int, resever_token: int, reserve_sol: int, complete: bool
+        self, total_supply: int, reserve_token: int, reserve_sol: int, complete: bool
     ):
-        self.complete = complete
-        self.reserve_sol = reserve_sol
-        self.reserve_token = resever_token
-        self.total_supply = total_supply
+        self.is_complete = complete
+        self.y = (total_supply - reserve_token) / 10**6
+        self.x = reserve_sol / 10**9
         pass
 
     def __str__(self) -> str:
-        f"total_supply:{self.total_supply}, reserve_token:{self.reserve_token}, reserve_sol:{self.reserve_sol}, complete:{self.complete}"
+        f"y:{self.y}, x:{self.x}, complete:{self.is_complete}"
         pass
 
 
@@ -68,7 +66,13 @@ def get_bonding_data(bonding_curve_pda: Pubkey) -> BondingData:
         parsed_data = bonding_curve_struct.parse(data)
         print("total supply = {}".format(parsed_data.total_supply))
 
-        return parsed_data
+        return BondingData(
+            total_supply=parsed_data.total_supply,
+            reserve_token=parsed_data.reserve_token,
+            reserve_sol=parsed_data.reserve_sol,
+            complete=parsed_data.complete,
+        )
+
     except Exception as e:
         print("error: {}".format(e))
         return None

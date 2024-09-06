@@ -50,8 +50,6 @@ def buy(mint_str: str, sol_amount: float = 0.01, slippage: int = 25) -> bool:
                 owner, owner, mint
             )
 
-
-
         # Define account keys required for the swap
         MINT = Pubkey.from_string(coin_data["mint"])
         BONDING_CURVE = Pubkey.from_string(coin_data["bonding_curve"])
@@ -65,11 +63,13 @@ def buy(mint_str: str, sol_amount: float = 0.01, slippage: int = 25) -> bool:
         CURVE_CONFIG_PDA = Pubkey.from_string(coin_data["curve_config_pda"])
 
         bonding_data = get_bonding_data(POOL_PDA)
-        pprint(bonding_data)
+        pprint(str(bonding_data))
+        assert bonding_data is not None, "empty bonding data"
 
-          # token 数量
-        token_amount = calc_buy_for_dy(x=bonding_data.reserve_sol/10**9, dx=sol_amount )
+        # token 数量
+        token_amount = calc_buy_for_dy(x=bonding_data.x, dx=sol_amount)
         token_amount = int(token_amount * 10**6)
+        print("token amount: {}".format(token_amount))
 
         # Build account key list
         keys = [
