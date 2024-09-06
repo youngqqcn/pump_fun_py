@@ -1,3 +1,4 @@
+import json
 from pprint import pprint
 import struct
 from solana.transaction import AccountMeta, Transaction
@@ -18,6 +19,7 @@ from utils import get_token_balance, confirm_txn
 from solana.rpc.types import TxOpts
 from coin_data import get_bonding_data, get_coin_data
 from typing import Optional, Union
+from traceback import print_exc
 
 # def buy(mint_str: str, sol_in: float = 0.01, slippage: int = 25) -> bool:
 
@@ -63,7 +65,7 @@ def buy(mint_str: str, sol_amount: float = 0.01, slippage: int = 25) -> bool:
         CURVE_CONFIG_PDA = Pubkey.from_string(coin_data["curve_config_pda"])
 
         bonding_data = get_bonding_data(POOL_PDA)
-        pprint(str(bonding_data))
+        print( bonding_data)
         assert bonding_data is not None, "empty bonding data"
 
         # token 数量
@@ -106,7 +108,7 @@ def buy(mint_str: str, sol_amount: float = 0.01, slippage: int = 25) -> bool:
         data = bytearray()
         data.extend(bytes.fromhex("66063d1201daebea"))
         data.extend(struct.pack("<Q", int(token_amount)))
-        data.extend(struct.pack("<Q", 10**9))
+        data.extend(struct.pack("<Q", 10**9)) # TODO: 计算滑点
         data = bytes(data)
         swap_instruction = Instruction(FANSLNAD_PROGRAM, data, keys)
 
@@ -130,11 +132,12 @@ def buy(mint_str: str, sol_amount: float = 0.01, slippage: int = 25) -> bool:
 
     except Exception as e:
         print(e)
+        print_exc(e)
 
 
 def sell(
     mint_str: str,
-    token_balance: Optional[Union[int, float]] = None,
+    token_amount: Optional[Union[int, float]] = None,
     slippage: int = 25,
     close_token_account: bool = True,
 ) -> bool:
@@ -161,14 +164,16 @@ def sell(
         # print(f"Token Price: {token_price:.20f} SOL")
 
         # Get token balance
-        if token_balance == None:
+        if token_amount == None:
             token_balance = get_token_balance(mint_str)
-        print("Token Balance:", token_balance)
-        if token_balance == 0:
+            token_account = token_balance # 全部卖完
+            print("Token Balance:", token_balance)
+
+        if token_amount == 0:
             return
 
         # Calculate amount
-        amount = int(token_balance * token_decimal)
+        amount = int(token_amount * token_decimal)
 
         # Calculate minimum SOL output
         # sol_out = float(token_balance) * float(token_price)
@@ -257,3 +262,4 @@ def sell(
 
     except Exception as e:
         print(e)
+        print_exc(e)

@@ -20,8 +20,7 @@ class BondingData:
         pass
 
     def __str__(self) -> str:
-        f"y:{self.y}, x:{self.x}, complete:{self.is_complete}"
-        pass
+        return f"y:{self.y}, x:{self.x}, complete:{self.is_complete}"
 
 
 def get_virtual_reserves(bonding_curve: Pubkey):
@@ -76,19 +75,6 @@ def get_bonding_data(bonding_curve_pda: Pubkey) -> BondingData:
     except Exception as e:
         print("error: {}".format(e))
         return None
-
-
-# def derive_bonding_curve_accounts(mint_str: str):
-#     try:
-#         mint = Pubkey.from_string(mint_str)
-#         bonding_curve, _ = Pubkey.find_program_address(
-#             ["bonding-curve".encode(), bytes(mint)],
-#             FANSLNAD_PROGRAM
-#         )
-#         associated_bonding_curve = get_associated_token_address(bonding_curve, mint)
-#         return bonding_curve, associated_bonding_curve
-#     except Exception:
-#         return None, None
 
 
 def derive_pool_accounts(mint_str: str):
