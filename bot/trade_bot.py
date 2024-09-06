@@ -85,7 +85,8 @@ class TradeBot:
                     is_buy = False
                     pass
 
-                if is_buy:
+
+                try:
                     if sol_balance < 1 * 10**9:
                         print("领取空投: {}".format(self.payer_keypair.pubkey()))
                         tmpCli = Client("https://api.devnet.solana.com")
@@ -93,8 +94,12 @@ class TradeBot:
                             self.payer_keypair.pubkey(), lamports=10**9
                         )
                         print("领取成功:{}".format(r.value))
+                except Exception:
+                    is_buy = False
+                    pass
 
-                    time.sleep(random.randint(10, 30) / 10)
+                if is_buy:
+                    time.sleep(random.randint(10, 50) / 10)
 
                     sol_amount = random.randint(1 * 10**8, 3 * 10**8) / 10**9
                     self.buy(
