@@ -28,6 +28,9 @@ def main():
     print(temp.pubkey())
     tradebot = TradeBot(rpc_client=client, keypair=payer_keypair)
 
+
+    print("uri: ", client._provider.endpoint_uri)
+
     try:
         while True:
 
@@ -43,7 +46,7 @@ def main():
                 sell_flag = True
 
             if sell_flag or random.randint(0, 100) < 30:
-                token_balance = get_token_balance(mint_str=mint_addr)
+                token_balance = tradebot.get_token_balance(mint_str=mint_addr)
 
                 # 卖出的百分比
                 sell_amount = token_balance * random.randint(10, 30) / 100
@@ -55,7 +58,7 @@ def main():
                     close_token_account=False,
                 )
 
-            sleep(50)
+            sleep(30)
         pass
     except Exception as e:
         print(e)

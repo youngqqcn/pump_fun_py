@@ -176,7 +176,7 @@ class TradeBot:
     ) -> bool:
         try:
             # Get coin data
-            coin_data = get_coin_data(mint_str)
+            coin_data = self.get_coin_data(mint_str)
             print(coin_data)
             if not coin_data:
                 print("Failed to retrieve coin data...")
@@ -326,7 +326,7 @@ class TradeBot:
         print("Max retries reached. Transaction confirmation failed.")
         return None
 
-    def get_token_balance(self, mint_str: str, pubkey: str):
+    def get_token_balance(self, mint_str: str):
         try:
             headers = {"accept": "application/json", "content-type": "application/json"}
 
@@ -335,18 +335,19 @@ class TradeBot:
                 "jsonrpc": "2.0",
                 "method": "getTokenAccountsByOwner",
                 "params": [
-                    pubkey,
+                    str(self.payer_keypair.pubkey()),
                     {"mint": mint_str},
                     {"encoding": "jsonParsed"},
                 ],
             }
 
             response = requests.post(
-                self.client._provider.endpoint_uri, json=payload, headers=headers
+                url=self.client._provider.endpoint_uri, json=payload, headers=headers
             )
             ui_amount = find_data(response.json(), "uiAmount")
             return float(ui_amount)
         except Exception as e:
+            print_exc(e)
             return None
 
     def get_bonding_data(self, bonding_curve_pda: Pubkey) -> BondingData:
