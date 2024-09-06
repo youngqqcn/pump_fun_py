@@ -66,7 +66,7 @@ class TradeBot:
             while True:
 
                 sol_balance = self.client.get_balance(self.payer_keypair.pubkey()).value
-                if sol_balance < 0.5 *10**9:
+                if sol_balance < 1 *10**9:
                     print("领取空投: {}".format(self.payer_keypair.pubkey()))
                     tmpCli = Client("https://api.devnet.solana.com")
                     r = tmpCli.request_airdrop(self.payer_keypair.pubkey(), lamports=10**9)
