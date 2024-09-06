@@ -64,15 +64,22 @@ class TradeBot:
             print("=====地址:{}".format(self.payer_keypair.pubkey()))
 
             while True:
+
+                sol_balance = self.client.get_balance(self.payer_keypair.pubkey()).value
+                if sol_balance < 0.5 *10**9:
+                    print("领取空投: {}".format(self.payer_keypair.pubkey()))
+                    tmpCli = Client("https://api.devnet.solana.com")
+                    r = tmpCli.request_airdrop(self.payer_keypair.pubkey(), lamports=10**9)
+                    print("领取成功:{}".format(r.value))
+
                 time.sleep(random.randint(10, 30)/10)
 
                 sol_amount = random.randint(1 * 10**8, 3 * 10**8) / 10**9
                 self.buy(mint_str=self.mint_addr, sol_amount=sol_amount, slippage=10)
 
-                sol_balance = self.client.get_balance(self.payer_keypair.pubkey()).value
 
                 sell_flag = False
-                if sol_balance / 10**9 < 10:
+                if sol_balance / 10**9 < 1:
                     # 如果余额不够，马上卖
                     sell_flag = True
 
