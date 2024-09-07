@@ -71,20 +71,17 @@ class TradeBot:
                     # 池子中的sol越多，买入概率越小, 卖出概率越大
                     buy_probablity = (bonding_data.x / 80) * 100
 
-                is_buy = random.randint(0, 100) > buy_probablity
+                is_sell = random.randint(0, 100) < buy_probablity
 
-                token_balance = self.get_token_balance(mint_str=self.mint_addr)
-                if token_balance < 10000000:
-                    is_buy = True
-
+                sol_balance = 0.0
+                token_balance = 0.0
                 try:
                     sol_balance = self.client.get_balance(
                         self.payer_keypair.pubkey()
                     ).value
                 except Exception:
-                    is_buy = False
+                    is_sell = False
                     pass
-
 
                 try:
                     if sol_balance < 1 * 10**9:
@@ -95,19 +92,22 @@ class TradeBot:
                         )
                         print("领取成功:{}".format(r.value))
                 except Exception:
-                    is_buy = False
+                    is_sell = True
                     pass
 
-                if is_buy:
+                if True and sol_balance > 10**9:
                     time.sleep(random.randint(10, 50) / 10)
 
                     sol_amount = random.randint(1 * 10**8, 3 * 10**8) / 10**9
                     self.buy(
                         mint_str=self.mint_addr, sol_amount=sol_amount, slippage=10
                     )
-                else:
+
+                token_balance = self.get_token_balance(mint_str=self.mint_addr)
+                print("token余额:{}".format(token_balance))
+                if is_sell and token_balance > 1000000:
                     # 卖出的百分比
-                    sell_amount = token_balance * random.randint(3, 20) / 100
+                    sell_amount = token_balance * random.randint(3, 10) / 100
                     self.sell(
                         mint_str=self.mint_addr,
                         token_amount=sell_amount,
@@ -119,7 +119,7 @@ class TradeBot:
             pass
         except Exception as e:
             print(e)
-            print_exc(e)
+            # print_exc(e)
 
         pass
 
@@ -232,7 +232,7 @@ class TradeBot:
 
         except Exception as e:
             print(e)
-            print_exc(e)
+            # print_exc(e)
 
     def sell(
         self,
@@ -337,7 +337,7 @@ class TradeBot:
             data.extend(bytes.fromhex("33e685a4017f83ad"))
             data.extend(struct.pack("<Q", amount))
             data.extend(struct.pack("<B", bump))
-            data.extend(struct.pack("<Q", 100))  # TODO
+            data.extend(struct.pack("<Q", 1))  # TODO
             data = bytes(data)
             swap_instruction = Instruction(FANSLNAD_PROGRAM, data, keys)
 
@@ -364,7 +364,7 @@ class TradeBot:
 
         except Exception as e:
             print(e)
-            print_exc(e)
+            # print_exc(e)
 
     def confirm_txn(self, txn_sig, max_retries=20, retry_interval=3):
         retries = 0
@@ -416,7 +416,7 @@ class TradeBot:
             ui_amount = find_data(response.json(), "uiAmount")
             return float(ui_amount)
         except Exception as e:
-            print_exc(e)
+            # print_exc(e)
             return 0
 
     def get_bonding_data(self, bonding_curve_pda: Pubkey) -> BondingData:
