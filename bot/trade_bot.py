@@ -54,6 +54,7 @@ class TradeBot:
         self.client = rpc_client
         self.payer_keypair = keypair
         self.mint_addr = mint_addr
+
         self.pool_pda = ""
         pass
 
@@ -64,12 +65,19 @@ class TradeBot:
             buy_probablity = 50
             while True:
 
+                pool_sol = 0
+                if self.pool_pda == "":
+                    coin_data = self.get_coin_data(self.mint_addr)
+                    if coin_data is not None:
+                        self.pool_pda = coin_data["pool_pda"]
+
+
                 if self.pool_pda != "":
-                    bonding_data = self.get_bonding_data(
-                        Pubkey.from_string(self.pool_pda)
-                    )
+                    bonding_data = self.get_bonding_data(Pubkey.from_string(self.pool_pda))
+                    print("bonding data :{}".format(bonding_data))
                     # 池子中的sol越多，买入概率越小, 卖出概率越大
                     buy_probablity = (bonding_data.x / 80) * 100
+                    pool_sol = bonding_data.x
 
                 is_sell = random.randint(0, 100) < buy_probablity
 
@@ -95,7 +103,7 @@ class TradeBot:
                     is_sell = True
                     pass
 
-                if True and sol_balance > 10**9:
+                if True and sol_balance > 10**9 and pool_sol < 75:
                     time.sleep(random.randint(10, 50) / 10)
 
                     sol_amount = random.randint(1 * 10**8, 3 * 10**8) / 10**9
@@ -104,8 +112,8 @@ class TradeBot:
                     )
 
                 token_balance = self.get_token_balance(mint_str=self.mint_addr)
-                print("token余额:{}".format(token_balance))
-                if is_sell and token_balance > 1000000:
+                print("{} token余额:{}, sol余额:{}".format(self.payer_keypair.pubkey(), token_balance, sol_balance/10**9))
+                if pool_sol >= 75 or is_sell and token_balance > 1000000:
                     # 卖出的百分比
                     sell_amount = token_balance * random.randint(3, 10) / 100
                     self.sell(
@@ -119,7 +127,7 @@ class TradeBot:
             pass
         except Exception as e:
             print(e)
-            # print_exc(e)
+            print_exc(e)
 
         pass
 
@@ -224,7 +232,7 @@ class TradeBot:
 
             # Send and confirm transaction
             txn_sig = self.client.send_transaction(
-                txn, self.payer_keypair, opts=TxOpts(skip_preflight=True)
+                txn, self.payer_keypair, opts=TxOpts(skip_preflight=True) # TODO
             ).value
             print("Transaction Signature", txn_sig)
             confirm = self.confirm_txn(txn_sig)
@@ -356,7 +364,7 @@ class TradeBot:
 
             # Send and confirm transaction
             txn_sig = self.client.send_transaction(
-                txn, self.payer_keypair, opts=TxOpts(skip_preflight=True)
+                txn, self.payer_keypair, opts=TxOpts(skip_preflight=True) # TODO
             ).value
             print("Transaction Signature", txn_sig)
             confirm = self.confirm_txn(txn_sig)

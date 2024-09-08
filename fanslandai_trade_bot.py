@@ -21,11 +21,12 @@ def run_start(worker_instance: TradeBot):
 def main():
     RPC = os.getenv("RPC")
 
-    temp = Keypair.from_seed(b"zxdffsdfsdfdfuuusfsdfdsfsdffdsfx")
-    print("temp: {}".format( temp))
-    print("temp: {}".format( temp.pubkey()))
+    # temp = Keypair.from_seed(b"dddddsdfsdfdfuuusfsdfdsfsdffds99")
+    # print("temp: {}".format( temp))
+    # print("temp: {}".format( temp.pubkey()))
 
-    mint_addr = "BBwV9WtsobWJStdY8o2ftxRkpyyNXG41SgSGErRXQWS4"
+    # mint_addr = "BBwV9WtsobWJStdY8o2ftxRkpyyNXG41SgSGErRXQWS4" # HIHI
+    mint_addr = "F2EsW7dtn2Tp86CdtmJ5pN5XkSn6ViacVVnV4eybeaaD"  # HIHI
     tradebot1 = TradeBot(
         rpc_client=Client(RPC),
         keypair=Keypair.from_base58_string(os.getenv("PRIV_KEY_1")),
@@ -44,11 +45,17 @@ def main():
         mint_addr=mint_addr,
     )
 
+    tradebot4 = TradeBot(
+        rpc_client=Client(RPC),
+        keypair=Keypair.from_base58_string(os.getenv("PRIV_KEY_4")),
+        mint_addr=mint_addr,
+    )
 
     processes = [
-        multiprocessing.Process(target=run_start, args=(tradebot1, )),
-        multiprocessing.Process(target=run_start, args=(tradebot2, )),
-        multiprocessing.Process(target=run_start, args=(tradebot3, )),
+        multiprocessing.Process(target=run_start, args=(tradebot1,)),
+        multiprocessing.Process(target=run_start, args=(tradebot2,)),
+        multiprocessing.Process(target=run_start, args=(tradebot3,)),
+        multiprocessing.Process(target=run_start, args=(tradebot4,)),
     ]
 
     for p in processes:
