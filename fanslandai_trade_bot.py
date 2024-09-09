@@ -26,7 +26,8 @@ def main():
     # print("temp: {}".format( temp.pubkey()))
 
     # mint_addr = "BBwV9WtsobWJStdY8o2ftxRkpyyNXG41SgSGErRXQWS4" # HIHI
-    mint_addr = "F2EsW7dtn2Tp86CdtmJ5pN5XkSn6ViacVVnV4eybeaaD"  # HIHI
+    mint_addr = os.getenv("MINT")  # HIHI
+    assert len(mint_addr) == 44, "invalid token mint"
     tradebot1 = TradeBot(
         rpc_client=Client(RPC),
         keypair=Keypair.from_base58_string(os.getenv("PRIV_KEY_1")),
