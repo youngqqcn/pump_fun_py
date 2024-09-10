@@ -83,25 +83,17 @@ class TradeBot:
 
                 sol_balance = 0.0
                 token_balance = 0.0
-                try:
-                    sol_balance = self.client.get_balance(
-                        self.payer_keypair.pubkey()
-                    ).value
-                except Exception:
-                    is_sell = False
-                    pass
+                sol_balance = self.client.get_balance(
+                    self.payer_keypair.pubkey()
+                ).value
 
-                try:
-                    if sol_balance < 1 * 10**9:
-                        print("领取空投: {}".format(self.payer_keypair.pubkey()))
-                        tmpCli = Client("https://api.devnet.solana.com")
-                        r = tmpCli.request_airdrop(
-                            self.payer_keypair.pubkey(), lamports=10**9
-                        )
-                        print("领取成功:{}".format(r.value))
-                except Exception:
-                    is_sell = True
-                    pass
+                # if sol_balance < 1 * 10**9:
+                #     print("领取空投: {}".format(self.payer_keypair.pubkey()))
+                #     tmpCli = Client("https://api.devnet.solana.com")
+                #     r = tmpCli.request_airdrop(
+                #         self.payer_keypair.pubkey(), lamports=10**9
+                #     )
+                #     print("领取成功:{}".format(r.value))
 
                 if True and sol_balance > 10**9 and pool_sol < 75:
                     time.sleep(random.randint(10, 50) / 10)
@@ -117,7 +109,7 @@ class TradeBot:
                         self.payer_keypair.pubkey(), token_balance, sol_balance / 10**9
                     )
                 )
-                if pool_sol >= 75 or is_sell and token_balance > 1000000:
+                if sol_balance < 1*10**9 or pool_sol >= 75 or is_sell and token_balance > 1000000:
                     # 卖出的百分比
                     sell_amount = token_balance * random.randint(3, 10) / 100
                     self.sell(
