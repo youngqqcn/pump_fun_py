@@ -3,6 +3,7 @@ from pprint import pprint
 import random
 import struct
 import time
+import traceback
 import requests
 from solana.transaction import AccountMeta, Transaction
 from spl.token.instructions import (
@@ -22,7 +23,6 @@ from bot.calc import calc_buy_for_dy
 from bot.utils import find_data
 from solana.rpc.types import TxOpts
 from typing import Optional, Union
-from traceback import print_exc
 from solana.rpc.api import Client
 from solders.keypair import Keypair  # type: ignore
 from solana.transaction import Signature
@@ -121,8 +121,8 @@ class TradeBot:
 
                 time.sleep(loop_secs)
             except Exception as e:
-                print(e)
-                print_exc(e)
+                # print(e)
+                traceback.print_exc()
 
         pass
 
@@ -234,8 +234,7 @@ class TradeBot:
             print(confirm)
 
         except Exception as e:
-            print(e)
-            # print_exc(e)
+            traceback.print_exc()
 
     def sell(
         self,
@@ -366,8 +365,7 @@ class TradeBot:
             print(confirm)
 
         except Exception as e:
-            print(e)
-            # print_exc(e)
+            traceback.print_exc()
 
     def confirm_txn(self, txn_sig, max_retries=20, retry_interval=3):
         retries = 0
@@ -419,7 +417,7 @@ class TradeBot:
             ui_amount = find_data(response.json(), "uiAmount")
             return float(ui_amount)
         except Exception as e:
-            # print_exc(e)
+            traceback.print_exc()
             return 0
 
     def get_bonding_data(self, bonding_curve_pda: Pubkey) -> BondingData:
@@ -452,6 +450,7 @@ class TradeBot:
 
         except Exception as e:
             print("error: {}".format(e))
+            traceback.print_exc()
             return None
 
     def derive_pool_accounts(self, mint_str: str):
@@ -463,6 +462,7 @@ class TradeBot:
             associated_bonding_curve = get_associated_token_address(bonding_curve, mint)
             return bonding_curve, associated_bonding_curve
         except Exception:
+            traceback.print_exc()
             return None, None
 
     def derive_curve_config_pda(self) -> Pubkey:
@@ -496,4 +496,5 @@ class TradeBot:
                 "curve_config_pda": str(curve_config_pda),
             }
         except Exception:
+            traceback.print_exc()
             return None
