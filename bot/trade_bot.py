@@ -59,8 +59,8 @@ class TradeBot:
         pass
 
     def start(self, loop_secs=30):
+        buy_probablity = 50
         while True:
-            buy_probablity = 50
             try:
                 print("=====地址:{}".format(self.payer_keypair.pubkey()))
 
