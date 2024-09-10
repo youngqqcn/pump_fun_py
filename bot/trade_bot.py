@@ -148,7 +148,7 @@ class TradeBot:
                 )
                 token_account = account_data.value[0].pubkey
                 token_account_instructions = None
-            except:
+            except Exception:
                 token_account = get_associated_token_address(owner, mint)
                 token_account_instructions = create_associated_token_account(
                     owner, owner, mint
