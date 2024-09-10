@@ -127,7 +127,7 @@ class TradeBot:
             pass
         except Exception as e:
             print(e)
-            print_exc(e)
+            # print_exc(e)
 
         pass
 

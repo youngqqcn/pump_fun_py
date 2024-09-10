@@ -15,7 +15,7 @@ load_dotenv(".env")
 
 
 def run_start(worker_instance: TradeBot):
-    worker_instance.start()
+    worker_instance.start(loop_secs=1)
 
 
 def main():
