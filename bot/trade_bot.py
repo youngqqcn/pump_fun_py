@@ -422,32 +422,14 @@ class TradeBot:
 
     def get_token_balance(self, mint_str: str):
         try:
-            headers = {"accept": "application/json", "content-type": "application/json"}
-            payload = {
-                "id": 1,
-                "jsonrpc": "2.0",
-                "method": "getTokenAccountsByOwner",
-                "params": [
-                    str(self.payer_keypair.pubkey()),
-                    {"mint": mint_str},
-                    {"encoding": "jsonParsed"},
-                ],
-            }
-
-            response = requests.post(
-                url=self.client._provider.endpoint_uri, json=payload, headers=headers
+            ata = get_associated_token_address(
+                self.payer_keypair.pubkey(), Pubkey.from_string(mint_str)
             )
-
-            # rsp = self.client.get_token_accounts_by_owner(
-            #     self.payer_keypair.pubkey(),
-            #     TokenAccountOpts(
-            #         mint=Pubkey.from_string(mint_str), encoding="jsonParsed"
-            #     ),
-            # )
-            print("========================={}".format(response.json()))
-            ui_amount = find_data(response.json(), "uiAmount")
-
-            return float(ui_amount)
+            rsp = self.client.get_token_account_balance(
+                pubkey=ata, commitment="processed"
+            )
+            print("============token balance rsp: {}".format(rsp))
+            return rsp.value.ui_amount
         except Exception as e:
             traceback.print_exc()
             return 0
