@@ -33,20 +33,33 @@ from binascii import hexlify
 
 
 class BondingData:
-    y = 0  # 虚拟池子中token的数量
-    x = 0  # 虚拟池子中SOL的数量
+    total_supply = 1000000000 * 10**6
+    virtual_token_reserve = 0  # 虚拟池子中token的数量
+    virtual_sol_reserve = 0  # 虚拟池子中SOL的数量
+    real_token_reserve = 0
+    real_sol_reserve = 0
     is_complete = False
 
     def __init__(
-        self, total_supply: int, reserve_token: int, reserve_sol: int, complete: bool
+        self,
+        virtual_token_reserve: int,
+        virtual_sol_reserve: int,
+        real_token_reserve: int,
+        real_sol_reserve: int,
+        complete: bool,
     ):
         self.is_complete = complete
-        self.y = (total_supply - reserve_token) / 10**6
-        self.x = reserve_sol / 10**9
+        self.virtual_token_reserve = virtual_token_reserve
+        self.virtual_sol_reserve = virtual_sol_reserve
+        self.real_sol_reserve = real_sol_reserve
+        self.real_token_reserve = real_token_reserve
         pass
 
     def __str__(self) -> str:
-        return f"y:{self.y}, x:{self.x}, complete:{self.is_complete}"
+        return f"virtual_token_reserve:{self.virtual_token_reserve},\
+        virtual_sol_reserve: {self.virtual_sol_reserve},\
+        real_token_reserve:{self.real_sol_reserve},\
+        real_sol_reserve:{self.real_sol_reserve}"
 
 
 class TradeBot:
@@ -76,16 +89,14 @@ class TradeBot:
                     )
                     print("bonding data :{}".format(bonding_data))
                     # 池子中的sol越多，买入概率越小, 卖出概率越大
-                    buy_probablity = (bonding_data.x / 80) * 100
-                    pool_sol = bonding_data.x
+                    buy_probablity = (bonding_data.real_sol_reserve / 10**9 / 70) * 100
+                    pool_sol = bonding_data.real_sol_reserve / 10**9
 
                 is_sell = random.randint(0, 100) < buy_probablity
 
                 sol_balance = 0.0
                 token_balance = 0.0
-                sol_balance = self.client.get_balance(
-                    self.payer_keypair.pubkey()
-                ).value
+                sol_balance = self.client.get_balance(self.payer_keypair.pubkey()).value
 
                 # if sol_balance < 1 * 10**9:
                 #     print("领取空投: {}".format(self.payer_keypair.pubkey()))
@@ -98,10 +109,12 @@ class TradeBot:
                 if True and sol_balance > 10**9 and pool_sol < 75:
                     time.sleep(random.randint(10, 50) / 10)
 
+                    print("=================开始买入=================")
                     sol_amount = random.randint(1 * 10**8, 3 * 10**8) / 10**9
                     self.buy(
                         mint_str=self.mint_addr, sol_amount=sol_amount, slippage=10
                     )
+                    print("===============买入结束 ======================")
 
                 token_balance = self.get_token_balance(mint_str=self.mint_addr)
                 print(
@@ -109,15 +122,22 @@ class TradeBot:
                         self.payer_keypair.pubkey(), token_balance, sol_balance / 10**9
                     )
                 )
-                if sol_balance < 1*10**9 or pool_sol >= 75 or is_sell and token_balance > 1000000:
+                if (
+                    sol_balance < 1 * 10**9
+                    or pool_sol >= 75
+                    or is_sell
+                    and token_balance > 1000000
+                ):
                     # 卖出的百分比
                     sell_amount = token_balance * random.randint(3, 10) / 100
+                    print("===========开始卖出====================")
                     self.sell(
                         mint_str=self.mint_addr,
                         token_amount=sell_amount,
                         slippage=10,
                         close_token_account=False,
                     )
+                    print("===========卖出结束====================")
 
                 time.sleep(loop_secs)
             except Exception as e:
@@ -142,17 +162,18 @@ class TradeBot:
             token_account, token_account_instructions = None, None
 
             # Attempt to retrieve token account, otherwise create associated token account
-            try:
-                account_data = self.client.get_token_accounts_by_owner(
-                    owner, TokenAccountOpts(mint)
-                )
-                token_account = account_data.value[0].pubkey
-                token_account_instructions = None
-            except Exception:
+            # try:
+            #     account_data = self.client.get_token_accounts_by_owner(
+            #         owner, TokenAccountOpts(mint)
+            #     )
+            #     token_account = account_data.value[0].pubkey
+            #     token_account_instructions = None
+            # except Exception:
+            if True:
                 token_account = get_associated_token_address(owner, mint)
-                token_account_instructions = create_associated_token_account(
-                    owner, owner, mint
-                )
+                # token_account_instructions = create_associated_token_account(
+                #     owner, owner, mint
+                # )
 
             # Define account keys required for the swap
             MINT = Pubkey.from_string(coin_data["mint"])
@@ -172,8 +193,11 @@ class TradeBot:
             assert bonding_data is not None, "empty bonding data"
 
             # token 数量
-            token_amount = calc_buy_for_dy(x=bonding_data.x, dx=sol_amount)
-            token_amount = int(token_amount * 10**6)
+            token_amount = calc_buy_for_dy(
+                dx=int(sol_amount * 10**9),
+                virtual_sol_reserve=bonding_data.virtual_sol_reserve,
+                virtual_token_reserve=bonding_data.virtual_token_reserve,
+            )
             print("token amount: {}".format(token_amount))
 
             # Build account key list
@@ -399,7 +423,6 @@ class TradeBot:
     def get_token_balance(self, mint_str: str):
         try:
             headers = {"accept": "application/json", "content-type": "application/json"}
-
             payload = {
                 "id": 1,
                 "jsonrpc": "2.0",
@@ -414,7 +437,16 @@ class TradeBot:
             response = requests.post(
                 url=self.client._provider.endpoint_uri, json=payload, headers=headers
             )
+
+            # rsp = self.client.get_token_accounts_by_owner(
+            #     self.payer_keypair.pubkey(),
+            #     TokenAccountOpts(
+            #         mint=Pubkey.from_string(mint_str), encoding="jsonParsed"
+            #     ),
+            # )
+            print("========================={}".format(response.json()))
             ui_amount = find_data(response.json(), "uiAmount")
+
             return float(ui_amount)
         except Exception as e:
             traceback.print_exc()
@@ -427,10 +459,12 @@ class TradeBot:
             Padding(32),  # creator
             Padding(32),  # token
             "total_supply" / Int64ul,
-            "reserve_token" / Int64ul,
-            "reserve_sol" / Int64ul,
+            "virtual_token_reserve" / Int64ul,
+            "virtual_sol_reserve" / Int64ul,
             "bump" / Int8ub,
             "complete" / Int8ub,
+            "real_reserve_token" / Int64ul,
+            "real_reserve_sol" / Int64ul,
         )
 
         try:
@@ -442,9 +476,10 @@ class TradeBot:
             print("total supply = {}".format(parsed_data.total_supply))
 
             return BondingData(
-                total_supply=parsed_data.total_supply,
-                reserve_token=parsed_data.reserve_token,
-                reserve_sol=parsed_data.reserve_sol,
+                virtual_token_reserve=parsed_data.virtual_token_reserve,
+                virtual_sol_reserve=parsed_data.virtual_sol_reserve,
+                real_sol_reserve=parsed_data.real_reserve_sol,
+                real_token_reserve=parsed_data.real_reserve_token,
                 complete=parsed_data.complete,
             )
 
