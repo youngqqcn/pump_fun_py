@@ -27,6 +27,8 @@ def main():
 
     # mint_addr = "BBwV9WtsobWJStdY8o2ftxRkpyyNXG41SgSGErRXQWS4" # HIHI
     mint_addr = os.getenv("MINT")  # HIHI
+    print("mint addr: {}".format(mint_addr))
+
     # assert len(os.getenv("PROGRAM_ID")) == 44, "invalid program id"
     assert len(mint_addr) >= 43, "invalid token mint"
     tradebot1 = TradeBot(

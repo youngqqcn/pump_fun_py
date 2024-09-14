@@ -75,6 +75,10 @@ class TradeBot:
         sell_probablity = 10
         while True:
             try:
+                # if True:
+                #     self.sell_all()
+                #     continue
+
                 print("=====地址:{}".format(self.payer_keypair.pubkey()))
 
                 pool_sol = 0
@@ -143,6 +147,24 @@ class TradeBot:
                 traceback.print_exc()
 
         pass
+
+    def sell_all(self):
+        try:
+            token_balance = self.get_token_balance(mint_str=self.mint_addr)
+            print("{} token余额:{}".format(self.payer_keypair.pubkey(), token_balance))
+            if token_balance > 0:
+                # 卖出的百分比
+                sell_amount = token_balance #* random.randint(3, 10) / 100
+                print("===========开始卖出====================")
+                self.sell(
+                    mint_str=self.mint_addr,
+                    token_amount=sell_amount,
+                    slippage=10,
+                    close_token_account=True,
+                )
+                print("===========卖出结束====================")
+        except Exception as e:
+            traceback.print_exc()
 
     def buy(self, mint_str: str, sol_amount: float = 0.01, slippage: int = 25) -> bool:
         try:
